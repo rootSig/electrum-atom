@@ -47,6 +47,7 @@ def serialize_header(res):
     return s
 
 def deserialize_header(s, height):
+    print("deserialize_header, height", height, "length", len(s))
     if not s:
         raise InvalidHeader('Invalid header: {}'.format(s))
     if len(s) != 80:
