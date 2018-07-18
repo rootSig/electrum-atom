@@ -864,6 +864,22 @@ class Transaction:
             return 'p2wpkh-p2sh'
 
     @classmethod
+    def is_bip143_input(cls, txin):
+        return True
+
+    @classmethod
+    def get_sighash(cls):
+        return bitcoin.SIGHASH_ALL | bitcoin.SIGHASH_FORKID
+
+    @classmethod
+    def get_forkid(cls):
+        return 93
+
+    @classmethod
+    def get_hash_type(cls):
+        return cls.get_sighash() | (cls.get_forkid() << 8)
+
+    @classmethod
     def input_script(self, txin, estimate_size=False):
         _type = txin['type']
         if _type == 'coinbase':
@@ -983,13 +999,13 @@ class Transaction:
 
     def serialize_preimage(self, i):
         nVersion = int_to_hex(self.version, 4)
-        nHashType = int_to_hex(1, 4)
+        nHashType = int_to_hex(self.get_hash_type(), 4)
         nLocktime = int_to_hex(self.locktime, 4)
         inputs = self.inputs()
         outputs = self.outputs()
         txin = inputs[i]
         # TODO: py3 hex
-        if self.is_segwit_input(txin):
+        if self.is_bip143_input(txin):
             hashPrevouts = bh2u(Hash(bfh(''.join(self.serialize_outpoint(txin) for txin in inputs))))
             hashSequence = bh2u(Hash(bfh(''.join(int_to_hex(txin.get('sequence', 0xffffffff - 1), 4) for txin in inputs))))
             hashOutputs = bh2u(Hash(bfh(''.join(self.serialize_output(o) for o in outputs))))
@@ -1175,7 +1191,7 @@ class Transaction:
         pre_hash = Hash(bfh(self.serialize_preimage(txin_index)))
         privkey = ecc.ECPrivkey(privkey_bytes)
         sig = privkey.sign_transaction(pre_hash)
-        sig = bh2u(sig) + '01'
+        sig = bh2u(sig) + int_to_hex(self.get_sighash(), 1)
         return sig
 
     def get_outputs(self):

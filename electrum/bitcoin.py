@@ -36,6 +36,9 @@ from .crypto import Hash, sha256, hash_160, hmac_oneshot
 
 ################################## transactions
 
+SIGHASH_ALL    = 1
+SIGHASH_FORKID = 0x40
+
 COINBASE_MATURITY = 100
 COIN = 100000000
 TOTAL_COIN_SUPPLY_LIMIT_IN_BTC = 21000000
