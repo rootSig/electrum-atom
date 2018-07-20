@@ -463,7 +463,7 @@ class SimpleConfig(PrintError):
         return bool(self.get('dynamic_fees', True))
 
     def use_mempool_fees(self):
-        return bool(self.get('mempool_fees', False))
+        return bool(self.get('mempool_fees', True))
 
     def _feerate_from_fractional_slider_position(self, fee_level: float, dyn: bool,
                                                  mempool: bool) -> Union[int, None]:
