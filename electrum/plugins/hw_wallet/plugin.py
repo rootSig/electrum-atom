@@ -26,7 +26,9 @@
 
 from electrum.plugin import BasePlugin, hook
 from electrum.i18n import _
-from electrum.bitcoin import is_address
+from electrum.bitcoin import is_address, TYPE_SCRIPT
+from electrum.util import bfh, versiontuple
+from electrum.transaction import opcodes, TxOutput
 
 
 class HW_PluginBase(BasePlugin):
@@ -35,6 +37,8 @@ class HW_PluginBase(BasePlugin):
     #  class-static variables: client_class, firmware_URL, handler_class,
     #     libraries_available, libraries_URL, minimum_firmware,
     #     wallet_class, ckd_public, types, HidTransport
+
+    minimum_library = (0, )
 
     def __init__(self, parent, config, name):
         BasePlugin.__init__(self, parent, config, name)
@@ -76,6 +80,38 @@ class HW_PluginBase(BasePlugin):
             return False
         return True
 
+    def get_library_version(self) -> str:
+        """Returns the version of the 3rd party python library
+        for the hw wallet. For example '0.9.0'
+
+        Returns 'unknown' if library is found but cannot determine version.
+        Raises 'ImportError' if library is not found.
+        """
+        raise NotImplementedError()
+
+    def check_libraries_available(self) -> bool:
+        try:
+            library_version = self.get_library_version()
+        except ImportError:
+            return False
+        if library_version == 'unknown' or \
+                versiontuple(library_version) < self.minimum_library:
+            self.libraries_available_message = (
+                    _("Library version for '{}' is too old.").format(self.name)
+                    + '\nInstalled: {}, Needed: {}'
+                    .format(library_version, self.minimum_library))
+            self.print_stderr(self.libraries_available_message)
+            return False
+        return True
+
+    def get_library_not_available_message(self) -> str:
+        if hasattr(self, 'libraries_available_message'):
+            message = self.libraries_available_message
+        else:
+            message = _("Missing libraries for {}.").format(self.name)
+        message += '\n' + _("Make sure you install it with python3")
+        return message
+
 
 def is_any_tx_output_on_change_branch(tx):
     if not hasattr(tx, 'output_info'):
@@ -83,7 +119,19 @@ def is_any_tx_output_on_change_branch(tx):
     for _type, address, amount in tx.outputs():
         info = tx.output_info.get(address)
         if info is not None:
-            index, xpubs, m = info
+            index, xpubs, m = info.address_index, info.sorted_xpubs, info.num_sig
             if index[0] == 1:
                 return True
     return False
+
+
+def trezor_validate_op_return_output_and_get_data(output: TxOutput) -> bytes:
+    if output.type != TYPE_SCRIPT:
+        raise Exception("Unexpected output type: {}".format(output.type))
+    script = bfh(output.address)
+    if not (script[0] == opcodes.OP_RETURN and
+            script[1] == len(script) - 2 and script[1] <= 75):
+        raise Exception(_("Only OP_RETURN scripts, with one constant push, are supported."))
+    if output.value != 0:
+        raise Exception(_("Amount for OP_RETURN output must be zero."))
+    return script[2:]

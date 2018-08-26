@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 import hashlib
-import hmac
+from typing import List
 
 from .util import bfh, bh2u, BitcoinException, print_error, assert_bytes, to_bytes, inv_dict
 from . import version
@@ -629,6 +629,9 @@ def serialize_xpub(xtype, c, cK, depth=0, fingerprint=b'\x00'*4,
     return EncodeBase58Check(xpub)
 
 
+class InvalidMasterKeyVersionBytes(BitcoinException): pass
+
+
 def deserialize_xkey(xkey, prv, *, net=None):
     if net is None:
         net = constants.net
@@ -643,8 +646,8 @@ def deserialize_xkey(xkey, prv, *, net=None):
     header = int('0x' + bh2u(xkey[0:4]), 16)
     headers = net.XPRV_HEADERS if prv else net.XPUB_HEADERS
     if header not in headers.values():
-        raise BitcoinException('Invalid extended key format: {}'
-                               .format(hex(header)))
+        raise InvalidMasterKeyVersionBytes('Invalid extended key format: {}'
+                                           .format(hex(header)))
     xtype = list(headers.keys())[list(headers.values()).index(header)]
     n = 33 if prv else 32
     K_or_k = xkey[13+n:]
@@ -710,6 +713,24 @@ def bip32_derivation(s):
         if n == '': continue
         i = int(n[:-1]) + BIP32_PRIME if n[-1] == "'" else int(n)
         yield i
+
+def convert_bip32_path_to_list_of_uint32(n: str) -> List[int]:
+    """Convert bip32 path to list of uint32 integers with prime flags
+    m/0/-1/1' -> [0, 0x80000001, 0x80000001]
+
+    based on code in trezorlib
+    """
+    path = []
+    for x in n.split('/')[1:]:
+        if x == '': continue
+        prime = 0
+        if x.endswith("'"):
+            x = x.replace('\'', '')
+            prime = BIP32_PRIME
+        if x.startswith('-'):
+            prime = BIP32_PRIME
+        path.append(abs(int(x)) | prime)
+    return path
 
 def is_bip32_derivation(x):
     try:

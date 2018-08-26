@@ -34,7 +34,7 @@ from .keystore import bip44_derivation, purpose48_derivation
 from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, wallet_types, Wallet
 from .storage import STO_EV_USER_PW, STO_EV_XPUB_PW, get_derivation_used_for_hw_device_encryption
 from .i18n import _
-from .util import UserCancelled, InvalidPassword
+from .util import UserCancelled, InvalidPassword, WalletFileException
 
 # hardware device setup purpose
 HWD_SETUP_NEW_WALLET, HWD_SETUP_DECRYPT_WALLET = range(0, 2)
@@ -106,10 +106,20 @@ class BaseWizard(object):
         self.choice_dialog(title=title, message=message, choices=choices, run_next=self.on_wallet_type)
 
     def upgrade_storage(self):
+        exc = None
         def on_finished():
-            self.wallet = Wallet(self.storage)
-            self.terminate()
-        self.waiting_dialog(partial(self.storage.upgrade), _('Upgrading wallet format...'), on_finished=on_finished)
+            if exc is None:
+                self.wallet = Wallet(self.storage)
+                self.terminate()
+            else:
+                raise exc
+        def do_upgrade():
+            nonlocal exc
+            try:
+                self.storage.upgrade()
+            except Exception as e:
+                exc = e
+        self.waiting_dialog(do_upgrade, _('Upgrading wallet format...'), on_finished=on_finished)
 
     def load_2fa(self):
         self.storage.put('wallet_type', '2fa')
@@ -230,7 +240,8 @@ class BaseWizard(object):
                     u = devmgr.unpaired_device_infos(None, plugin, devices=scanned_devices)
                 except BaseException as e:
                     devmgr.print_error('error getting device infos for {}: {}'.format(name, e))
-                    debug_msg += '  {}:\n    {}\n'.format(plugin.name, e)
+                    indented_error_msg = '    '.join([''] + str(e).splitlines(keepends=True))
+                    debug_msg += '  {}:\n{}\n'.format(plugin.name, indented_error_msg)
                     continue
                 devices += list(map(lambda x: (name, x), u))
         if not debug_msg:
@@ -336,6 +347,7 @@ class BaseWizard(object):
         except ScriptTypeNotSupported:
             raise  # this is handled in derivation_dialog
         except BaseException as e:
+            traceback.print_exc(file=sys.stderr)
             self.show_error(e)
             return
         d = {

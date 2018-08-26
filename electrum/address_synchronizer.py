@@ -25,10 +25,14 @@ import threading
 import itertools
 from collections import defaultdict
 
-from .util import PrintError, profiler
-from .transaction import Transaction
+from . import bitcoin
+from .bitcoin import COINBASE_MATURITY, TYPE_ADDRESS, TYPE_PUBKEY
+from .util import PrintError, profiler, bfh, VerifiedTxInfo, TxMinedStatus
+from .transaction import Transaction, TxOutput
 from .synchronizer import Synchronizer
 from .verifier import SPV
+from .blockchain import hash_header
+from .i18n import _
 
 TX_HEIGHT_LOCAL = -2
 TX_HEIGHT_UNCONF_PARENT = -1
@@ -41,6 +45,7 @@ class AddTransactionException(Exception):
 class UnrelatedTransactionException(AddTransactionException):
     def __str__(self):
         return _("Transaction is unrelated to this wallet.")
+
 
 class AddressSynchronizer(PrintError):
     """
@@ -58,16 +63,69 @@ class AddressSynchronizer(PrintError):
         self.transaction_lock = threading.RLock()
         # address -> list(txid, height)
         self.history = storage.get('addr_history',{})
-        # Verified transactions.  txid -> (height, timestamp, block_pos).  Access with self.lock.
-        self.verified_tx = storage.get('verified_tx3', {})
+        # Verified transactions.  txid -> VerifiedTxInfo.  Access with self.lock.
+        verified_tx = storage.get('verified_tx3', {})
+        self.verified_tx = {}
+        for txid, (height, timestamp, txpos, header_hash) in verified_tx.items():
+            self.verified_tx[txid] = VerifiedTxInfo(height, timestamp, txpos, header_hash)
         # Transactions pending verification.  txid -> tx_height. Access with self.lock.
         self.unverified_tx = defaultdict(int)
         # true when synchronized
         self.up_to_date = False
+        # thread local storage for caching stuff
+        self.threadlocal_cache = threading.local()
+
+        self.load_and_cleanup()
+
+    def load_and_cleanup(self):
         self.load_transactions()
         self.load_local_history()
+        self.check_history()
         self.load_unverified_transactions()
         self.remove_local_transactions_we_dont_have()
+
+    def is_mine(self, address):
+        return address in self.history
+
+    def get_addresses(self):
+        return sorted(self.history.keys())
+
+    def get_address_history(self, addr):
+        h = []
+        # we need self.transaction_lock but get_tx_height will take self.lock
+        # so we need to take that too here, to enforce order of locks
+        with self.lock, self.transaction_lock:
+            related_txns = self._history_local.get(addr, set())
+            for tx_hash in related_txns:
+                tx_height = self.get_tx_height(tx_hash).height
+                h.append((tx_hash, tx_height))
+        return h
+
+    def get_address_history_len(self, addr: str) -> int:
+        """Return number of transactions where address is involved."""
+        return len(self._history_local.get(addr, ()))
+
+    def get_txin_address(self, txi):
+        addr = txi.get('address')
+        if addr and addr != "(pubkey)":
+            return addr
+        prevout_hash = txi.get('prevout_hash')
+        prevout_n = txi.get('prevout_n')
+        dd = self.txo.get(prevout_hash, {})
+        for addr, l in dd.items():
+            for n, v, is_cb in l:
+                if n == prevout_n:
+                    return addr
+        return None
+
+    def get_txout_address(self, txo: TxOutput):
+        if txo.type == TYPE_ADDRESS:
+            addr = txo.address
+        elif txo.type == TYPE_PUBKEY:
+            addr = bitcoin.public_key_to_p2pkh(bfh(txo.address))
+        else:
+            addr = None
+        return addr
 
     def load_unverified_transactions(self):
         # review transactions that are in the history
@@ -145,7 +203,7 @@ class AddressSynchronizer(PrintError):
             # of add_transaction tx, we might learn of more-and-more inputs of
             # being is_mine, as we roll the gap_limit forward
             is_coinbase = tx.inputs()[0]['type'] == 'coinbase'
-            tx_height = self.get_tx_height(tx_hash)[0]
+            tx_height = self.get_tx_height(tx_hash).height
             if not allow_unrelated:
                 # note that during sync, if the transactions are not properly sorted,
                 # it could happen that we think tx is unrelated but actually one of the inputs is is_mine.
@@ -164,10 +222,10 @@ class AddressSynchronizer(PrintError):
             conflicting_txns = self.get_conflicting_transactions(tx)
             if conflicting_txns:
                 existing_mempool_txn = any(
-                    self.get_tx_height(tx_hash2)[0] in (TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT)
+                    self.get_tx_height(tx_hash2).height in (TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT)
                     for tx_hash2 in conflicting_txns)
                 existing_confirmed_txn = any(
-                    self.get_tx_height(tx_hash2)[0] > 0
+                    self.get_tx_height(tx_hash2).height > 0
                     for tx_hash2 in conflicting_txns)
                 if existing_confirmed_txn and tx_height <= 0:
                     # this is a non-confirmed tx that conflicts with confirmed txns; drop.
@@ -262,6 +320,14 @@ class AddressSynchronizer(PrintError):
             self.txi.pop(tx_hash, None)
             self.txo.pop(tx_hash, None)
 
+    def get_depending_transactions(self, tx_hash):
+        """Returns all (grand-)children of tx_hash in this wallet."""
+        children = set()
+        for other_hash in self.spent_outpoints[tx_hash].values():
+            children.add(other_hash)
+            children |= self.get_depending_transactions(other_hash)
+        return children
+
     def receive_tx_callback(self, tx_hash, tx, tx_height):
         self.add_unverified_tx(tx_hash, tx_height)
         self.add_transaction(tx_hash, tx, allow_unrelated=True)
@@ -322,10 +388,30 @@ class AddressSynchronizer(PrintError):
         for txid in itertools.chain(self.txi, self.txo):
             self._add_tx_to_local_history(txid)
 
+    @profiler
+    def check_history(self):
+        save = False
+        hist_addrs_mine = list(filter(lambda k: self.is_mine(k), self.history.keys()))
+        hist_addrs_not_mine = list(filter(lambda k: not self.is_mine(k), self.history.keys()))
+        for addr in hist_addrs_not_mine:
+            self.history.pop(addr)
+            save = True
+        for addr in hist_addrs_mine:
+            hist = self.history[addr]
+            for tx_hash, tx_height in hist:
+                if self.txi.get(tx_hash) or self.txo.get(tx_hash):
+                    continue
+                tx = self.transactions.get(tx_hash)
+                if tx is not None:
+                    self.add_transaction(tx_hash, tx, allow_unrelated=True)
+                    save = True
+        if save:
+            self.save_transactions()
+
     def remove_local_transactions_we_dont_have(self):
         txid_set = set(self.txi) | set(self.txo)
         for txid in txid_set:
-            tx_height = self.get_tx_height(txid)[0]
+            tx_height = self.get_tx_height(txid).height
             if tx_height == TX_HEIGHT_LOCAL and txid not in self.transactions:
                 self.remove_transaction(txid)
 
@@ -362,10 +448,35 @@ class AddressSynchronizer(PrintError):
                 self.transactions = {}
                 self.save_transactions()
 
+    def get_txpos(self, tx_hash):
+        """Returns (height, txpos) tuple, even if the tx is unverified."""
+        with self.lock:
+            if tx_hash in self.verified_tx:
+                info = self.verified_tx[tx_hash]
+                return info.height, info.txpos
+            elif tx_hash in self.unverified_tx:
+                height = self.unverified_tx[tx_hash]
+                return (height, 0) if height > 0 else ((1e9 - height), 0)
+            else:
+                return (1e9+1, 0)
+
+    def with_local_height_cached(func):
+        # get local height only once, as it's relatively expensive.
+        # take care that nested calls work as expected
+        def f(self, *args, **kwargs):
+            orig_val = getattr(self.threadlocal_cache, 'local_height', None)
+            self.threadlocal_cache.local_height = orig_val or self.get_local_height()
+            try:
+                return func(self, *args, **kwargs)
+            finally:
+                self.threadlocal_cache.local_height = orig_val
+        return f
+
+    @with_local_height_cached
     def get_history(self, domain=None):
         # get domain
         if domain is None:
-            domain = self.get_addresses()
+            domain = self.history.keys()
         domain = set(domain)
         # 1. Get the history of each address in the domain, maintain the
         #    delta of a tx as the sum of its deltas on domain addresses
@@ -382,16 +493,16 @@ class AddressSynchronizer(PrintError):
         history = []
         for tx_hash in tx_deltas:
             delta = tx_deltas[tx_hash]
-            height, conf, timestamp = self.get_tx_height(tx_hash)
-            history.append((tx_hash, height, conf, timestamp, delta))
+            tx_mined_status = self.get_tx_height(tx_hash)
+            history.append((tx_hash, tx_mined_status, delta))
         history.sort(key = lambda x: self.get_txpos(x[0]))
         history.reverse()
         # 3. add balance
         c, u, x = self.get_balance(domain)
         balance = c + u + x
         h2 = []
-        for tx_hash, height, conf, timestamp, delta in history:
-            h2.append((tx_hash, height, conf, timestamp, delta, balance))
+        for tx_hash, tx_mined_status, delta in history:
+            h2.append((tx_hash, tx_mined_status, delta, balance))
             if balance is None or delta is None:
                 balance = None
             else:
@@ -423,25 +534,27 @@ class AddressSynchronizer(PrintError):
                     self._history_local[addr] = cur_hist
 
     def add_unverified_tx(self, tx_hash, tx_height):
-        if tx_height in (TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT) \
-                and tx_hash in self.verified_tx:
+        if tx_hash in self.verified_tx:
+            if tx_height in (TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT):
+                with self.lock:
+                    self.verified_tx.pop(tx_hash)
+                if self.verifier:
+                    self.verifier.remove_spv_proof_for_tx(tx_hash)
+        else:
             with self.lock:
-                self.verified_tx.pop(tx_hash)
+                # tx will be verified only if height > 0
+                self.unverified_tx[tx_hash] = tx_height
+            # to remove pending proof requests:
             if self.verifier:
                 self.verifier.remove_spv_proof_for_tx(tx_hash)
 
-        # tx will be verified only if height > 0
-        if tx_hash not in self.verified_tx:
-            with self.lock:
-                self.unverified_tx[tx_hash] = tx_height
-
-    def add_verified_tx(self, tx_hash, info):
+    def add_verified_tx(self, tx_hash: str, info: VerifiedTxInfo):
         # Remove from the unverified map and add to the verified map
         with self.lock:
             self.unverified_tx.pop(tx_hash, None)
-            self.verified_tx[tx_hash] = info  # (tx_height, timestamp, pos)
-        height, conf, timestamp = self.get_tx_height(tx_hash)
-        self.network.trigger_callback('verified', tx_hash, height, conf, timestamp)
+            self.verified_tx[tx_hash] = info
+        tx_mined_status = self.get_tx_height(tx_hash)
+        self.network.trigger_callback('verified', tx_hash, tx_mined_status)
 
     def get_unverified_txs(self):
         '''Returns a map from tx hash to transaction height'''
@@ -452,33 +565,45 @@ class AddressSynchronizer(PrintError):
         '''Used by the verifier when a reorg has happened'''
         txs = set()
         with self.lock:
-            for tx_hash, item in list(self.verified_tx.items()):
-                tx_height, timestamp, pos = item
+            for tx_hash, info in list(self.verified_tx.items()):
+                tx_height = info.height
                 if tx_height >= height:
                     header = blockchain.read_header(tx_height)
-                    # fixme: use block hash, not timestamp
-                    if not header or header.get('timestamp') != timestamp:
+                    if not header or hash_header(header) != info.header_hash:
                         self.verified_tx.pop(tx_hash, None)
+                        # NOTE: we should add these txns to self.unverified_tx,
+                        # but with what height?
+                        # If on the new fork after the reorg, the txn is at the
+                        # same height, we will not get a status update for the
+                        # address. If the txn is not mined or at a diff height,
+                        # we should get a status update. Unless we put tx into
+                        # unverified_tx, it will turn into local. So we put it
+                        # into unverified_tx with the old height, and if we get
+                        # a status update, that will overwrite it.
+                        self.unverified_tx[tx_hash] = tx_height
                         txs.add(tx_hash)
         return txs
 
     def get_local_height(self):
         """ return last known height if we are offline """
+        cached_local_height = getattr(self.threadlocal_cache, 'local_height', None)
+        if cached_local_height is not None:
+            return cached_local_height
         return self.network.get_local_height() if self.network else self.storage.get('stored_height', 0)
 
-    def get_tx_height(self, tx_hash):
-        """ Given a transaction, returns (height, conf, timestamp) """
+    def get_tx_height(self, tx_hash: str) -> TxMinedStatus:
+        """ Given a transaction, returns (height, conf, timestamp, header_hash) """
         with self.lock:
             if tx_hash in self.verified_tx:
-                height, timestamp, pos = self.verified_tx[tx_hash]
-                conf = max(self.get_local_height() - height + 1, 0)
-                return height, conf, timestamp
+                info = self.verified_tx[tx_hash]
+                conf = max(self.get_local_height() - info.height + 1, 0)
+                return TxMinedStatus(info.height, conf, info.timestamp, info.header_hash)
             elif tx_hash in self.unverified_tx:
                 height = self.unverified_tx[tx_hash]
-                return height, 0, None
+                return TxMinedStatus(height, 0, None, None)
             else:
                 # local transaction
-                return TX_HEIGHT_LOCAL, 0, None
+                return TxMinedStatus(TX_HEIGHT_LOCAL, 0, None, None)
 
     def set_up_to_date(self, up_to_date):
         with self.lock:
@@ -492,3 +617,178 @@ class AddressSynchronizer(PrintError):
 
     def is_up_to_date(self):
         with self.lock: return self.up_to_date
+
+    def get_tx_delta(self, tx_hash, address):
+        "effect of tx on address"
+        delta = 0
+        # substract the value of coins sent from address
+        d = self.txi.get(tx_hash, {}).get(address, [])
+        for n, v in d:
+            delta -= v
+        # add the value of the coins received at address
+        d = self.txo.get(tx_hash, {}).get(address, [])
+        for n, v, cb in d:
+            delta += v
+        return delta
+
+    def get_tx_value(self, txid):
+        " effect of tx on the entire domain"
+        delta = 0
+        for addr, d in self.txi.get(txid, {}).items():
+            for n, v in d:
+                delta -= v
+        for addr, d in self.txo.get(txid, {}).items():
+            for n, v, cb in d:
+                delta += v
+        return delta
+
+    def get_wallet_delta(self, tx):
+        """ effect of tx on wallet """
+        is_relevant = False  # "related to wallet?"
+        is_mine = False
+        is_pruned = False
+        is_partial = False
+        v_in = v_out = v_out_mine = 0
+        for txin in tx.inputs():
+            addr = self.get_txin_address(txin)
+            if self.is_mine(addr):
+                is_mine = True
+                is_relevant = True
+                d = self.txo.get(txin['prevout_hash'], {}).get(addr, [])
+                for n, v, cb in d:
+                    if n == txin['prevout_n']:
+                        value = v
+                        break
+                else:
+                    value = None
+                if value is None:
+                    is_pruned = True
+                else:
+                    v_in += value
+            else:
+                is_partial = True
+        if not is_mine:
+            is_partial = False
+        for addr, value in tx.get_outputs():
+            v_out += value
+            if self.is_mine(addr):
+                v_out_mine += value
+                is_relevant = True
+        if is_pruned:
+            # some inputs are mine:
+            fee = None
+            if is_mine:
+                v = v_out_mine - v_out
+            else:
+                # no input is mine
+                v = v_out_mine
+        else:
+            v = v_out_mine - v_in
+            if is_partial:
+                # some inputs are mine, but not all
+                fee = None
+            else:
+                # all inputs are mine
+                fee = v_in - v_out
+        if not is_mine:
+            fee = None
+        return is_relevant, is_mine, v, fee
+
+    def get_addr_io(self, address):
+        h = self.get_address_history(address)
+        received = {}
+        sent = {}
+        for tx_hash, height in h:
+            l = self.txo.get(tx_hash, {}).get(address, [])
+            for n, v, is_cb in l:
+                received[tx_hash + ':%d'%n] = (height, v, is_cb)
+        for tx_hash, height in h:
+            l = self.txi.get(tx_hash, {}).get(address, [])
+            for txi, v in l:
+                sent[txi] = height
+        return received, sent
+
+    def get_addr_utxo(self, address):
+        coins, spent = self.get_addr_io(address)
+        for txi in spent:
+            coins.pop(txi)
+        out = {}
+        for txo, v in coins.items():
+            tx_height, value, is_cb = v
+            prevout_hash, prevout_n = txo.split(':')
+            x = {
+                'address':address,
+                'value':value,
+                'prevout_n':int(prevout_n),
+                'prevout_hash':prevout_hash,
+                'height':tx_height,
+                'coinbase':is_cb
+            }
+            out[txo] = x
+        return out
+
+    # return the total amount ever received by an address
+    def get_addr_received(self, address):
+        received, sent = self.get_addr_io(address)
+        return sum([v for height, v, is_cb in received.values()])
+
+    @with_local_height_cached
+    def get_addr_balance(self, address):
+        """Return the balance of a bitcoin address:
+        confirmed and matured, unconfirmed, unmatured
+        """
+        received, sent = self.get_addr_io(address)
+        c = u = x = 0
+        local_height = self.get_local_height()
+        for txo, (tx_height, v, is_cb) in received.items():
+            if is_cb and tx_height + COINBASE_MATURITY > local_height:
+                x += v
+            elif tx_height > 0:
+                c += v
+            else:
+                u += v
+            if txo in sent:
+                if sent[txo] > 0:
+                    c -= v
+                else:
+                    u -= v
+        return c, u, x
+
+    @with_local_height_cached
+    def get_utxos(self, domain=None, excluded=None, mature=False, confirmed_only=False):
+        coins = []
+        if domain is None:
+            domain = self.get_addresses()
+        domain = set(domain)
+        if excluded:
+            domain = set(domain) - excluded
+        for addr in domain:
+            utxos = self.get_addr_utxo(addr)
+            for x in utxos.values():
+                if confirmed_only and x['height'] <= 0:
+                    continue
+                if mature and x['coinbase'] and x['height'] + COINBASE_MATURITY > self.get_local_height():
+                    continue
+                coins.append(x)
+                continue
+        return coins
+
+    def get_balance(self, domain=None):
+        if domain is None:
+            domain = self.get_addresses()
+        domain = set(domain)
+        cc = uu = xx = 0
+        for addr in domain:
+            c, u, x = self.get_addr_balance(addr)
+            cc += c
+            uu += u
+            xx += x
+        return cc, uu, xx
+
+    def is_used(self, address):
+        h = self.history.get(address,[])
+        return len(h) != 0
+
+    def is_empty(self, address):
+        c, u, x = self.get_addr_balance(address)
+        return c+u+x == 0

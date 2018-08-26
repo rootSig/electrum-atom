@@ -534,11 +534,11 @@ class DigitalBitbox_KeyStore(Hardware_KeyStore):
                     self.give_error("No matching x_key for sign_transaction") # should never happen
 
             # Build pubkeyarray from outputs
-            for _type, address, amount in tx.outputs():
-                assert _type == TYPE_ADDRESS
-                info = tx.output_info.get(address)
+            for o in tx.outputs():
+                assert o.type == TYPE_ADDRESS
+                info = tx.output_info.get(o.address)
                 if info is not None:
-                    index, xpubs, m = info
+                    index = info.address_index
                     changePath = self.get_derivation() + "/%d/%d" % index
                     changePubkey = self.derive_pubkey(index[0], index[1])
                     pubkeyarray_i = {'pubkey': changePubkey, 'keypath': changePath}

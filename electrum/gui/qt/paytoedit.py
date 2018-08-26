@@ -29,13 +29,13 @@ from decimal import Decimal
 
 from electrum import bitcoin
 from electrum.util import bfh
+from electrum.transaction import TxOutput
 
 from .qrtextedit import ScanQRTextEdit
 from .completion_text_edit import CompletionTextEdit
 from . import util
 
-RE_ADDRESS = '[1-9A-HJ-NP-Za-km-z]{26,}'
-RE_ALIAS = '(.*?)\s*\<([1-9A-HJ-NP-Za-km-z]{26,})\>'
+RE_ALIAS = '(.*?)\s*\<([0-9A-Za-z]{1,})\>'
 
 frozen_style = "QWidget { background-color:none; border:none;}"
 normal_style = "QPlainTextEdit { }"
@@ -78,7 +78,7 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit):
         x, y = line.split(',')
         out_type, out = self.parse_output(x)
         amount = self.parse_amount(y)
-        return out_type, out, amount
+        return TxOutput(out_type, out, amount)
 
     def parse_output(self, x):
         try:
@@ -140,16 +140,16 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit):
         is_max = False
         for i, line in enumerate(lines):
             try:
-                _type, to_address, amount = self.parse_address_and_amount(line)
+                output = self.parse_address_and_amount(line)
             except:
                 self.errors.append((i, line.strip()))
                 continue
 
-            outputs.append((_type, to_address, amount))
-            if amount == '!':
+            outputs.append(output)
+            if output.value == '!':
                 is_max = True
             else:
-                total += amount
+                total += output.value
 
         self.win.is_max = is_max
         self.outputs = outputs
@@ -175,7 +175,7 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit):
                 amount = self.amount_edit.get_amount()
 
             _type, addr = self.payto_address
-            self.outputs = [(_type, addr, amount)]
+            self.outputs = [TxOutput(_type, addr, amount)]
 
         return self.outputs[:]
 

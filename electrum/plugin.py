@@ -26,7 +26,6 @@ from collections import namedtuple
 import traceback
 import sys
 import os
-import imp
 import pkgutil
 import time
 import threading
@@ -43,6 +42,7 @@ hooks = {}
 
 
 class Plugins(DaemonThread):
+    verbosity_filter = 'p'
 
     @profiler
     def __init__(self, config, is_local, gui_name):
@@ -457,7 +457,8 @@ class DeviceMgr(ThreadJob, PrintError):
         '''Returns a list of DeviceInfo objects: one for each connected,
         unpaired device accepted by the plugin.'''
         if not plugin.libraries_available:
-            raise Exception('Missing libraries for {}'.format(plugin.name))
+            message = plugin.get_library_not_available_message()
+            raise Exception(message)
         if devices is None:
             devices = self.scan_devices()
         devices = [dev for dev in devices if not self.xpub_by_id(dev.id_)]
