@@ -1,5 +1,17 @@
 {
-    "95.216.28.122": {
+    "electrum-test.bitcoinatom.io": {
+        "pruning": "-",
+        "s": "51004",
+        "t": "51003",
+        "version": "1.2"
+    },
+    "electrum-test.bitcoin-atom.org": {
+        "pruning": "-",
+        "s": "51004",
+        "t": "51003",
+        "version": "1.2"
+    },
+    "electrum-test.bitcoinatom.net": {
         "pruning": "-",
         "s": "51004",
         "t": "51003",

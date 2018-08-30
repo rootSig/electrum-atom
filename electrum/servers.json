@@ -1,8 +1,20 @@
 {
-    "127.0.0.1": {
+    "electrum.bitcoinatom.io": {
         "pruning": "-",
-        "s": "50002",
-        "t": "50001",
+        "s": "50004",
+        "t": "50003",
+        "version": "1.2"
+    },
+    "electrum.bitcoin-atom.org": {
+        "pruning": "-",
+        "s": "50004",
+        "t": "50003",
+        "version": "1.2"
+    },
+    "electrum.bitcoinatom.net": {
+        "pruning": "-",
+        "s": "50004",
+        "t": "50003",
         "version": "1.2"
     }
 }
