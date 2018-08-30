@@ -36,8 +36,8 @@ if platform.system() in ['Linux', 'FreeBSD', 'DragonFly']:
         else:
             usr_share = os.path.expanduser('~/.local/share')
     data_files += [
-        (os.path.join(usr_share, 'applications/'), ['electrum.desktop']),
-        (os.path.join(usr_share, icons_dirname), ['icons/electrum.png'])
+        (os.path.join(usr_share, 'applications/'), ['electrum-atom.desktop']),
+        (os.path.join(usr_share, icons_dirname), ['icons/electrum-atom.png'])
     ]
 
 extras_require = {
@@ -48,7 +48,7 @@ extras_require['full'] = extras_require['hardware'] + extras_require['fast']
 
 
 setup(
-    name="Electrum",
+    name="Electrum-Atom",
     version=version.ELECTRUM_VERSION,
     install_requires=requirements,
     extras_require=extras_require,
@@ -68,12 +68,12 @@ setup(
             'locale/*/LC_MESSAGES/electrum.mo',
         ],
     },
-    scripts=['electrum/electrum'],
+    scripts=['electrum/electrum-atom'],
     data_files=data_files,
-    description="Lightweight Bitcoin Wallet",
+    description="Lightweight Bitcoin Atom Wallet",
     author="Thomas Voegtlin",
     author_email="thomasv@electrum.org",
     license="MIT Licence",
-    url="https://electrum.org",
-    long_description="""Lightweight Bitcoin Wallet"""
+    url="https://bitcoinatom.io",
+    long_description="""Lightweight Bitcoin Atom Wallet"""
 )

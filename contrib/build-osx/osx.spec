@@ -5,9 +5,9 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules, coll
 import sys
 import os
 
-PACKAGE='Electrum'
-PYPKG='electrum'
-MAIN_SCRIPT='run_electrum'
+PACKAGE='Electrum-Atom'
+PYPKG='electrum-atom'
+MAIN_SCRIPT='run_electrum_atom'
 ICONS_FILE='electrum.icns'
 
 for i, x in enumerate(sys.argv):
