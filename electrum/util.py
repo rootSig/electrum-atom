@@ -629,12 +629,12 @@ def parse_URI(uri, on_pr=None):
 
     if ':' not in uri:
         if not bitcoin.is_address(uri):
-            raise Exception("Not a bitcoin address")
+            raise Exception("Not a Bitcoin Atom address")
         return {'address': uri}
 
     u = urllib.parse.urlparse(uri)
-    if u.scheme != 'bitcoin':
-        raise Exception("Not a bitcoin URI")
+    if u.scheme != 'bitcoinatom':
+        raise Exception("Not a Bitcoin Atom URI")
     address = u.path
 
     # python for android fails to parse query

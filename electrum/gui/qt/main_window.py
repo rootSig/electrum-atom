@@ -2328,8 +2328,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return
         if not data:
             return
-        # if the user scanned a bitcoin URI
-        if str(data).startswith("bitcoin:"):
+        # if the user scanned a bitcoin atom URI
+        if str(data).startswith("bitcoinatom:"):
             self.pay_to_URI(data)
             return
         # else if the user scanned an offline signed tx
