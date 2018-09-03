@@ -170,16 +170,17 @@ class Blockchain(util.PrintError):
         self._size = os.path.getsize(p)//80 if os.path.exists(p) else 0
 
     def verify_header(self, header, prev_hash, prev_pos_hash, target):
-        _hash = hash_header(header)
+        height = header.get('block_height')
         prev_block_hash = header.get('prev_block_hash') # prev block hash from raw header
-
+        
         if prev_hash != prev_block_hash and prev_pos_hash != prev_block_hash: # check both header candidates
             raise Exception("prev hash mismatch: %s vs %s vs %s" % (prev_hash, prev_pos_hash, prev_block_hash))
-        if constants.net.TESTNET:
+        if height >= constants.net.FORK_HEIGHT or constants.net.TESTNET:
             return
         bits = self.target_to_bits(target)
         if bits != header.get('bits'):
             raise Exception("bits mismatch: %s vs %s" % (bits, header.get('bits')))
+        _hash = hash_header(header)
         if int('0x' + _hash, 16) > target:
             raise Exception("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
 
@@ -326,7 +327,7 @@ class Blockchain(util.PrintError):
 
     def get_target(self, index):
         # compute target from chunk x, used in chunk x+1
-        if constants.net.TESTNET:
+        if index * 2016 + 2015 >= constants.net.FORK_HEIGHT or constants.net.TESTNET:
             return 0
         if index == -1:
             return MAX_TARGET
