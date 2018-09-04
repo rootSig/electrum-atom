@@ -5,13 +5,13 @@
         "t": "51003",
         "version": "1.2"
     },
-    "electrum-test.bitcoin-atom.org": {
+    "electrum-test.bitcoinatom.net": {
         "pruning": "-",
         "s": "51004",
         "t": "51003",
         "version": "1.2"
     },
-    "electrum-test.bitcoinatom.net": {
+    "electrumx1-test.bitcoin-atom.org": {
         "pruning": "-",
         "s": "51004",
         "t": "51003",
