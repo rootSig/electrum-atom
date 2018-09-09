@@ -20,7 +20,7 @@ class Test_SimpleConfig(SequentialTestCase):
         # for development machines with electrum installed :)
         self.user_dir = tempfile.mkdtemp()
 
-        self.options = {"electrum_path": self.electrum_dir}
+        self.options = {"electrum_atom_path": self.electrum_dir}
         self._saved_stdout = sys.stdout
         self._stdout_buffer = StringIO()
         sys.stdout = self._stdout_buffer
@@ -54,44 +54,44 @@ class Test_SimpleConfig(SequentialTestCase):
     def test_simple_config_command_line_overrides_everything(self):
         """Options passed by command line override all other configuration
         sources"""
-        fake_read_user = lambda _: {"electrum_path": "b"}
+        fake_read_user = lambda _: {"electrum_atom_path": "b"}
         read_user_dir = lambda : self.user_dir
         config = SimpleConfig(options=self.options,
                               read_user_config_function=fake_read_user,
                               read_user_dir_function=read_user_dir)
-        self.assertEqual(self.options.get("electrum_path"),
-                         config.get("electrum_path"))
+        self.assertEqual(self.options.get("electrum_atom_path"),
+                         config.get("electrum_atom_path"))
 
     def test_simple_config_user_config_is_used_if_others_arent_specified(self):
         """If no system-wide configuration and no command-line options are
         specified, the user configuration is used instead."""
-        fake_read_user = lambda _: {"electrum_path": self.electrum_dir}
+        fake_read_user = lambda _: {"electrum_atom_path": self.electrum_dir}
         read_user_dir = lambda : self.user_dir
         config = SimpleConfig(options={},
                               read_user_config_function=fake_read_user,
                               read_user_dir_function=read_user_dir)
-        self.assertEqual(self.options.get("electrum_path"),
-                         config.get("electrum_path"))
+        self.assertEqual(self.options.get("electrum_atom_path"),
+                         config.get("electrum_atom_path"))
 
     def test_cannot_set_options_passed_by_command_line(self):
-        fake_read_user = lambda _: {"electrum_path": "b"}
+        fake_read_user = lambda _: {"electrum_atom_path": "b"}
         read_user_dir = lambda : self.user_dir
         config = SimpleConfig(options=self.options,
                               read_user_config_function=fake_read_user,
                               read_user_dir_function=read_user_dir)
-        config.set_key("electrum_path", "c")
-        self.assertEqual(self.options.get("electrum_path"),
-                         config.get("electrum_path"))
+        config.set_key("electrum_atom_path", "c")
+        self.assertEqual(self.options.get("electrum_atom_path"),
+                         config.get("electrum_atom_path"))
 
     def test_can_set_options_set_in_user_config(self):
         another_path = tempfile.mkdtemp()
-        fake_read_user = lambda _: {"electrum_path": self.electrum_dir}
+        fake_read_user = lambda _: {"electrum_atom_path": self.electrum_dir}
         read_user_dir = lambda : self.user_dir
         config = SimpleConfig(options={},
                               read_user_config_function=fake_read_user,
                               read_user_dir_function=read_user_dir)
-        config.set_key("electrum_path", another_path)
-        self.assertEqual(another_path, config.get("electrum_path"))
+        config.set_key("electrum_atom_path", another_path)
+        self.assertEqual(another_path, config.get("electrum_atom_path"))
 
     def test_user_config_is_not_written_with_read_only_config(self):
         """The user config does not contain command-line options when saved."""

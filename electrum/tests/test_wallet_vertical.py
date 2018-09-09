@@ -506,13 +506,13 @@ class TestWalletSending(TestCaseForTestnet):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.electrum_path = tempfile.mkdtemp()
-        cls.config = SimpleConfig({'electrum_path': cls.electrum_path})
+        cls.electrum_atom_path = tempfile.mkdtemp()
+        cls.config = SimpleConfig({'electrum_atom_path': cls.electrum_atom_path})
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        shutil.rmtree(cls.electrum_path)
+        shutil.rmtree(cls.electrum_atom_path)
 
     def create_standard_wallet_from_seed(self, seed_words):
         ks = keystore.from_seed(seed_words, '', False)
@@ -1020,13 +1020,13 @@ class TestWalletOfflineSigning(TestCaseForTestnet):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.electrum_path = tempfile.mkdtemp()
-        cls.config = SimpleConfig({'electrum_path': cls.electrum_path})
+        cls.electrum_atom_path = tempfile.mkdtemp()
+        cls.config = SimpleConfig({'electrum_atom_path': cls.electrum_atom_path})
 
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
-        shutil.rmtree(cls.electrum_path)
+        shutil.rmtree(cls.electrum_atom_path)
 
     @needs_test_with_all_ecc_implementations
     @mock.patch.object(storage.WalletStorage, '_write')

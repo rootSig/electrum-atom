@@ -82,8 +82,8 @@ class SimpleConfig(PrintError):
         self.cmdline_options.pop('config_version', None)
 
         # Set self.path and read the user config
-        self.user_config = {}  # for self.get in electrum_path()
-        self.path = self.electrum_path()
+        self.user_config = {}  # for self.get in electrum_atom_path()
+        self.path = self.electrum_atom_path()
         self.user_config = read_user_config_function(self.path)
         if not self.user_config:
             # avoid new config getting upgraded
@@ -100,10 +100,10 @@ class SimpleConfig(PrintError):
         # Make a singleton instance of 'self'
         set_config(self)
 
-    def electrum_path(self):
-        # Read electrum_path from command line
+    def electrum_atom_path(self):
+        # Read electrum_atom_path from command line
         # Otherwise use the user's default data directory.
-        path = self.get('electrum_path')
+        path = self.get('electrum_atom_path')
         if path is None:
             path = self.user_dir()
 

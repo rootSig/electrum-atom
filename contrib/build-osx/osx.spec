@@ -8,7 +8,7 @@ import os
 PACKAGE='Electrum-Atom'
 PYPKG='electrum-atom'
 MAIN_SCRIPT='run_electrum_atom'
-ICONS_FILE='electrum.icns'
+ICONS_FILE='electrum-atom.icns'
 
 for i, x in enumerate(sys.argv):
     if x == '--name':
