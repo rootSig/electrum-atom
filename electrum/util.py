@@ -349,7 +349,7 @@ def android_data_dir():
     return PythonActivity.mActivity.getFilesDir().getPath() + '/data'
 
 def android_headers_dir():
-    d = android_ext_dir() + '/org.electrum.electrum'
+    d = android_ext_dir() + '/org.electrum-atom.electrum'
     if not os.path.exists(d):
         try:
             os.mkdir(d)

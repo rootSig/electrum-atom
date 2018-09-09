@@ -555,7 +555,7 @@ class SimpleConfig(PrintError):
 
 
 def read_user_config(path):
-    """Parse and store the user config settings in electrum.conf into user_config[]."""
+    """Parse and store the user config settings in electrum-atom.conf into user_config[]."""
     if not path:
         return {}
     config_path = os.path.join(path, "config")

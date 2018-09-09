@@ -69,7 +69,7 @@ class CustomInstallCommand(install):
 
 
 setup(
-    name="ElectrumAtom",
+    name="electrum-atom",
     version=version.ELECTRUM_VERSION,
     install_requires=requirements,
     extras_require=extras_require,
