@@ -58,7 +58,7 @@
   VIAddVersionKey ProductName "${PRODUCT_NAME} Installer"
   VIAddVersionKey Comments "The installer for ${PRODUCT_NAME}"
   VIAddVersionKey CompanyName "${PRODUCT_NAME}"
-  VIAddVersionKey LegalCopyright "2013-2016 ${PRODUCT_PUBLISHER}"
+  VIAddVersionKey LegalCopyright "2013-2018 ${PRODUCT_PUBLISHER}"
   VIAddVersionKey FileDescription "${PRODUCT_NAME} Installer"
   VIAddVersionKey FileVersion ${PRODUCT_VERSION}
   VIAddVersionKey ProductVersion ${PRODUCT_VERSION}
@@ -72,7 +72,7 @@
   !define MUI_ABORTWARNING
   !define MUI_ABORTWARNING_TEXT "Are you sure you wish to abort the installation of ${PRODUCT_NAME}?"
   
-  !define MUI_ICON "c:\electrum-atom\icons\electrum.ico"
+  !define MUI_ICON "c:\electrum_atom\icons\electrum.ico"
   
 ;--------------------------------
 ;Pages
@@ -110,8 +110,8 @@ Section
   Delete "$SMPROGRAMS\${PRODUCT_NAME}\*.*"
   
   ;Files to pack into the installer
-  File /r "dist\electrum-atom\*.*"
-  File "c:\electrum-atom\icons\electrum.ico"
+  File /r "dist\electrum_atom\*.*"
+  File "c:\electrum_atom\icons\electrum.ico"
 
   ;Store installation folder
   WriteRegStr HKCU "Software\${PRODUCT_NAME}" "" $INSTDIR
@@ -132,7 +132,7 @@ Section
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\${PRODUCT_NAME} Testnet.lnk" "$INSTDIR\electrum-atom-${PRODUCT_VERSION}.exe" "--testnet" "$INSTDIR\electrum-atom-${PRODUCT_VERSION}.exe" 0
 
 
-  ;Links bitcoinatom: URI's to Electrum
+  ;Links bitcoinatom: URI's to Electrum Atom
   WriteRegStr HKCU "Software\Classes\bitcoinatom" "" "URL:bitcoinatom Protocol"
   WriteRegStr HKCU "Software\Classes\bitcoinatom" "URL Protocol" ""
   WriteRegStr HKCU "Software\Classes\bitcoinatom" "DefaultIcon" "$\"$INSTDIR\electrum.ico, 0$\""
