@@ -33,7 +33,7 @@ folder.
         --name electrum-wine-builder-cont \
         -v $PWD:/opt/wine64/drive_c/electrum \
         --rm \
-        --workdir /opt/wine64/drive_c/electrum/contrib/build-wine \
+        --workdir /opt/wine64/drive_c/electrum_atom/contrib/build-wine \
         electrum-wine-builder-img \
         ./build.sh
     ```

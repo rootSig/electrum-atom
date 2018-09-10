@@ -18,7 +18,7 @@ with open('contrib/requirements/requirements.txt') as f:
 with open('contrib/requirements/requirements-hw.txt') as f:
     requirements_hw = f.read().splitlines()
 
-version = imp.load_source('version', 'electrum/version.py')
+version = imp.load_source('version', 'electrum_atom/version.py')
 
 if sys.version_info[:3] < (3, 4, 0):
     sys.exit("Error: Electrum Atom requires Python version >= 3.4.0...")
@@ -61,7 +61,7 @@ class CustomInstallCommand(install):
             pass
         else:
             try:
-                path = os.path.join(self.install_lib, "electrum/gui/qt/icons_rc.py")
+                path = os.path.join(self.install_lib, "electrum_atom/gui/qt/icons_rc.py")
                 if not os.path.exists(path):
                     subprocess.call(["pyrcc5", "icons.qrc", "-o", path])
             except Exception as e:
@@ -74,22 +74,22 @@ setup(
     install_requires=requirements,
     extras_require=extras_require,
     packages=[
-        'electrum',
-        'electrum.gui',
-        'electrum.gui.qt',
-        'electrum.plugins',
-    ] + [('electrum.plugins.'+pkg) for pkg in find_packages('electrum/plugins')],
+        'electrum_atom',
+        'electrum_atom.gui',
+        'electrum_atom.gui.qt',
+        'electrum_atom.plugins',
+    ] + [('electrum_atom.plugins.'+pkg) for pkg in find_packages('electrum_atom/plugins')],
     package_dir={
-        'electrum': 'electrum'
+        'electrum_atom': 'electrum_atom'
     },
     package_data={
         '': ['*.txt', '*.json', '*.ttf', '*.otf'],
-        'electrum': [
+        'electrum_atom': [
             'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
         ],
     },
-    scripts=['electrum/electrum-atom'],
+    scripts=['electrum_atom/electrum-atom'],
     data_files=data_files,
     description="Lightweight Bitcoin Atom Wallet",
     author="Thomas Voegtlin",

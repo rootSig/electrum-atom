@@ -74,12 +74,12 @@ Render the SVG icons to PNGs (optional)::
 Compile the icons file for Qt::
 
     sudo apt-get install pyqt5-dev-tools
-    pyrcc5 icons.qrc -o electrum/gui/qt/icons_rc.py
+    pyrcc5 icons.qrc -o electrum_atom/gui/qt/icons_rc.py
 
 Compile the protobuf description file::
 
     sudo apt-get install protobuf-compiler
-    protoc --proto_path=electrum --python_out=electrum electrum/paymentrequest.proto
+    protoc --proto_path=electrum_atom --python_out=electrum_atom electrum_atom/paymentrequest.proto
 
 Create translations (optional)::
 
@@ -113,4 +113,4 @@ See `contrib/build-wine/`.
 Android
 -------
 
-See `electrum/gui/kivy/Readme.md` file.
+See `electrum_atom/gui/kivy/Readme.md` file.

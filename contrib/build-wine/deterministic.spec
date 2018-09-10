@@ -13,7 +13,7 @@ else:
 PYTHON_VERSION = '3.6.6'
 PYHOME = 'c:/python' + PYTHON_VERSION
 
-home = 'C:\\electrum\\'
+home = 'C:\\electrum_atom\\'
 
 # see https://github.com/pyinstaller/pyinstaller/issues/2005
 hiddenimports = []
@@ -33,10 +33,10 @@ binaries += [b for b in collect_dynamic_libs('PyQt5') if 'qwindowsvista' in b[0]
 binaries += [('C:/tmp/libsecp256k1.dll', '.')]
 
 datas = [
-    (home+'electrum/*.json', 'electrum'),
-    (home+'electrum/wordlist/english.txt', 'electrum/wordlist'),
-    (home+'electrum/locale', 'electrum/locale'),
-    (home+'electrum/plugins', 'electrum/plugins'),
+    (home+'electrum_atom/*.json', 'electrum_atom'),
+    (home+'electrum_atom/wordlist/english.txt', 'electrum_atom/wordlist'),
+    (home+'electrum_atom/locale', 'electrum_atom/locale'),
+    (home+'electrum_atom/plugins', 'electrum_atom/plugins'),
     ('C:\\Program Files (x86)\\ZBar\\bin\\', '.'),
 ]
 datas += collect_data_files('trezorlib')
@@ -47,23 +47,23 @@ datas += collect_data_files('ckcc')
 
 # We don't put these files in to actually include them in the script but to make the Analysis method scan them for imports
 a = Analysis([home+'run_electrum_atom',
-              home+'electrum/gui/qt/main_window.py',
-              home+'electrum/gui/text.py',
-              home+'electrum/util.py',
-              home+'electrum/wallet.py',
-              home+'electrum/simple_config.py',
-              home+'electrum/bitcoin.py',
-              home+'electrum/dnssec.py',
-              home+'electrum/commands.py',
-              home+'electrum/plugins/cosigner_pool/qt.py',
-              home+'electrum/plugins/email_requests/qt.py',
-              home+'electrum/plugins/trezor/client.py',
-              home+'electrum/plugins/trezor/qt.py',
-              home+'electrum/plugins/safe_t/client.py',
-              home+'electrum/plugins/safe_t/qt.py',
-              home+'electrum/plugins/keepkey/qt.py',
-              home+'electrum/plugins/ledger/qt.py',
-              home+'electrum/plugins/coldcard/qt.py',
+              home+'electrum_atom/gui/qt/main_window.py',
+              home+'electrum_atom/gui/text.py',
+              home+'electrum_atom/util.py',
+              home+'electrum_atom/wallet.py',
+              home+'electrum_atom/simple_config.py',
+              home+'electrum_atom/bitcoin.py',
+              home+'electrum_atom/dnssec.py',
+              home+'electrum_atom/commands.py',
+              home+'electrum_atom/plugins/cosigner_pool/qt.py',
+              home+'electrum_atom/plugins/email_requests/qt.py',
+              home+'electrum_atom/plugins/trezor/client.py',
+              home+'electrum_atom/plugins/trezor/qt.py',
+              home+'electrum_atom/plugins/safe_t/client.py',
+              home+'electrum_atom/plugins/safe_t/qt.py',
+              home+'electrum_atom/plugins/keepkey/qt.py',
+              home+'electrum_atom/plugins/ledger/qt.py',
+              home+'electrum_atom/plugins/coldcard/qt.py',
               #home+'packages/requests/utils.py'
               ],
              binaries=binaries,
@@ -93,7 +93,7 @@ exe_standalone = EXE(
     a.scripts,
     a.binaries,
     a.datas,
-    name=os.path.join('build\\pyi.win32\\electrum', cmdline_name + ".exe"),
+    name=os.path.join('build\\pyi.win32\\electrum_atom', cmdline_name + ".exe"),
     debug=False,
     strip=None,
     upx=False,
@@ -106,7 +106,7 @@ exe_portable = EXE(
     a.scripts,
     a.binaries,
     a.datas + [ ('is_portable', 'README.md', 'DATA' ) ],
-    name=os.path.join('build\\pyi.win32\\electrum', cmdline_name + "-portable.exe"),
+    name=os.path.join('build\\pyi.win32\\electrum_atom', cmdline_name + "-portable.exe"),
     debug=False,
     strip=None,
     upx=False,
@@ -120,7 +120,7 @@ exe_dependent = EXE(
     pyz,
     a.scripts,
     exclude_binaries=True,
-    name=os.path.join('build\\pyi.win32\\electrum', cmdline_name),
+    name=os.path.join('build\\pyi.win32\\electrum_atom', cmdline_name),
     debug=False,
     strip=None,
     upx=False,
@@ -137,4 +137,4 @@ coll = COLLECT(
     debug=False,
     icon=home+'icons/electrum.ico',
     console=False,
-    name=os.path.join('dist', 'electrum'))
+    name=os.path.join('dist', 'electrum_atom'))

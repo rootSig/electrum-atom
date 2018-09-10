@@ -18,9 +18,9 @@ bin/
 .vscode
 
 # icons
-electrum/gui/qt/icons_rc.py
-electrum/gui/kivy/theming/light-0.png
-electrum/gui/kivy/theming/light.atlas
+electrum_atom/gui/qt/icons_rc.py
+electrum_atom/gui/kivy/theming/light-0.png
+electrum_atom/gui/kivy/theming/light.atlas
 
 # tests/tox
 .tox/

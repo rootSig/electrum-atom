@@ -34,7 +34,7 @@ if ! which msgfmt > /dev/null 2>&1; then
     exit 1
 fi
 for i in ./locale/*; do
-    dir=$WINEPREFIX/drive_c/electrum/electrum/locale/$i/LC_MESSAGES
+    dir=$WINEPREFIX/drive_c/electrum_atom/electrum_atom/locale/$i/LC_MESSAGES
     mkdir -p $dir
     msgfmt --output-file=$dir/electrum.mo $i/electrum.po || true
 done
@@ -43,8 +43,8 @@ popd
 find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
 popd
 
-cp $WINEPREFIX/drive_c/electrum/LICENCE .
-cp $WINEPREFIX/drive_c/electrum/contrib/deterministic-build/electrum-icons/icons_rc.py $WINEPREFIX/drive_c/electrum/electrum/gui/qt/
+cp $WINEPREFIX/drive_c/electrum_atom/LICENCE .
+cp $WINEPREFIX/drive_c/electrum_atom/contrib/deterministic-build/electrum-icons/icons_rc.py $WINEPREFIX/drive_c/electrum_atom/electrum_atom/gui/qt/
 
 # Install frozen dependencies
 $PYTHON -m pip install -r ../../deterministic-build/requirements.txt
