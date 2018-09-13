@@ -20,8 +20,7 @@ set -e
 mkdir -p tmp
 cd tmp
 
-git clone $REPO $WINEPREFIX/drive_c/
-mv $WINEPREFIX/drive_c/electrum-atom $WINEPREFIX/drive_c/electrum_atom
+git clone $REPO $WINEPREFIX/drive_c/electrum_atom
 pushd $WINEPREFIX/drive_c/electrum_atom
 
 # Load electrum-icons and electrum-locale for this release
