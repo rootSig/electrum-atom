@@ -6,7 +6,7 @@
 ;--------------------------------
 ;Variables
 
-  !define PRODUCT_NAME "Electrum-Atom"
+  !define PRODUCT_NAME "Electrum Atom"
   !define PRODUCT_WEB_SITE "https://github.com/bitcoin-atom/electrum-atom"
   !define PRODUCT_PUBLISHER "Electrum Technologies GmbH"
   !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
@@ -72,7 +72,7 @@
   !define MUI_ABORTWARNING
   !define MUI_ABORTWARNING_TEXT "Are you sure you wish to abort the installation of ${PRODUCT_NAME}?"
   
-  !define MUI_ICON "c:\electrum_atom\icons\electrum-atom.ico"
+  !define MUI_ICON "c:\electrum_atom\icons\electrum_atom.ico"
   
 ;--------------------------------
 ;Pages
@@ -111,7 +111,7 @@ Section
   
   ;Files to pack into the installer
   File /r "dist\electrum_atom\*.*"
-  File "c:\electrum_atom\icons\electrum-atom.ico"
+  File "c:\electrum_atom\icons\electrum_atom.ico"
 
   ;Store installation folder
   WriteRegStr HKCU "Software\${PRODUCT_NAME}" "" $INSTDIR
@@ -135,7 +135,7 @@ Section
   ;Links bitcoinatom: URI's to Electrum Atom
   WriteRegStr HKCU "Software\Classes\bitcoinatom" "" "URL:bitcoinatom Protocol"
   WriteRegStr HKCU "Software\Classes\bitcoinatom" "URL Protocol" ""
-  WriteRegStr HKCU "Software\Classes\bitcoinatom" "DefaultIcon" "$\"$INSTDIR\electrum-atom.ico, 0$\""
+  WriteRegStr HKCU "Software\Classes\bitcoinatom" "DefaultIcon" "$\"$INSTDIR\electrum_atom.ico, 0$\""
   WriteRegStr HKCU "Software\Classes\bitcoinatom\shell\open\command" "" "$\"$INSTDIR\electrum-atom-${PRODUCT_VERSION}.exe$\" $\"%1$\""
 
   ;Adds an uninstaller possibility to Windows Uninstall or change a program section
@@ -144,7 +144,7 @@ Section
   WriteRegStr HKCU "${PRODUCT_UNINST_KEY}" "DisplayVersion" "${PRODUCT_VERSION}"
   WriteRegStr HKCU "${PRODUCT_UNINST_KEY}" "URLInfoAbout" "${PRODUCT_WEB_SITE}"
   WriteRegStr HKCU "${PRODUCT_UNINST_KEY}" "Publisher" "${PRODUCT_PUBLISHER}"
-  WriteRegStr HKCU "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\electrum-atom.ico"
+  WriteRegStr HKCU "${PRODUCT_UNINST_KEY}" "DisplayIcon" "$INSTDIR\electrum_atom.ico"
 
   ;Fixes Windows broken size estimates
   ${GetSize} "$INSTDIR" "/S=0K" $0 $1 $2
