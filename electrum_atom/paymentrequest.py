@@ -44,8 +44,8 @@ from .util import export_meta, import_meta
 from .bitcoin import TYPE_ADDRESS
 from .transaction import TxOutput
 
-REQUEST_HEADERS = {'Accept': 'application/bitcoin-paymentrequest', 'User-Agent': 'Electrum'}
-ACK_HEADERS = {'Content-Type':'application/bitcoin-payment','Accept':'application/bitcoin-paymentack','User-Agent':'Electrum'}
+REQUEST_HEADERS = {'Accept': 'application/bitcoinatom-paymentrequest', 'User-Agent': 'Electrum'}
+ACK_HEADERS = {'Content-Type':'application/bitcoinatom-payment','Accept':'application/bitcoinatom-paymentack','User-Agent':'Electrum'}
 
 ca_path = requests.certs.where()
 ca_list = None
@@ -75,7 +75,7 @@ def get_payment_request(url):
             response.raise_for_status()
             # Guard against `bitcoinatom:`-URIs with invalid payment request URLs
             if "Content-Type" not in response.headers \
-            or response.headers["Content-Type"] != "application/bitcoin-paymentrequest":
+            or response.headers["Content-Type"] != "application/bitcoinatom-paymentrequest":
                 data = None
                 error = "payment URL not pointing to a payment request handling server"
             else:
