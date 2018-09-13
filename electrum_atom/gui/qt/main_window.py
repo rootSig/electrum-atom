@@ -582,7 +582,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def show_report_bug(self):
         msg = ' '.join([
             _("Please report any bugs as issues on github:<br/>"),
-            "<a href=\"https://github.com/bitcoin-atom/electrum_atom/issues\">https://github.com/bitcoin-atom/electrum_atom/issues</a><br/><br/>",
+            "<a href=\"https://github.com/bitcoin-atom/electrum-atom/issues\">https://github.com/bitcoin-atom/electrum-atom/issues</a><br/><br/>",
             _("Before reporting a bug, upgrade to the most recent version of Electrum Atom (latest release or git HEAD), and include the version number in your report."),
             _("Try to explain not only what the bug is, but how it occurs.")
          ])

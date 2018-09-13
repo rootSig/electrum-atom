@@ -16,7 +16,7 @@ Before starting, make sure that the Xcode command line tools are installed (e.g.
     cd electrum
     ./contrib/build-osx/make_osx
     
-This creates a folder named Electrum.app.
+This creates a folder named ElectrumAtom.app.
 
 ## 2. Building the image 
 The usual way to distribute macOS applications is to use image files containing the 
@@ -26,11 +26,11 @@ they are not deterministic.
 Instead, we use the toolchain that Bitcoin uses: genisoimage and libdmg-hfsplus.
 These tools do not work on macOS, so you need a separate Linux machine (or VM).
 
-Copy the Electrum.app directory over and install the dependencies, e.g.:
+Copy the ElectrumAtom.app directory over and install the dependencies, e.g.:
 
     apt install libcap-dev cmake make gcc faketime
     
 Then you can just invoke `package.sh` with the path to the app:
 
     cd electrum
-    ./contrib/build-osx/package.sh ~/Electrum.app/
+    ./contrib/build-osx/package.sh ~/ElectrumAtom.app/
