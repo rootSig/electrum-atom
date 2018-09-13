@@ -1,7 +1,7 @@
 Building Mac OS binaries
 ========================
 
-This guide explains how to build Electrum binaries for macOS systems.
+This guide explains how to build Electrum Atom binaries for macOS systems.
 
 The build process consists of two steps:
 
@@ -13,7 +13,7 @@ makes the binaries incompatible with older versions.
 Before starting, make sure that the Xcode command line tools are installed (e.g. you have `git`).
 
 
-    cd electrum
+    cd electrum-atom
     ./contrib/build-osx/make_osx
     
 This creates a folder named ElectrumAtom.app.
@@ -32,5 +32,5 @@ Copy the ElectrumAtom.app directory over and install the dependencies, e.g.:
     
 Then you can just invoke `package.sh` with the path to the app:
 
-    cd electrum
+    cd electrum-atom
     ./contrib/build-osx/package.sh ~/ElectrumAtom.app/
