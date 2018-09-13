@@ -55,19 +55,6 @@ curl https://homebrew.bintray.com/bottles/libusb-1.0.22.el_capitan.bottle.tar.gz
 tar xz --directory $BUILDDIR
 cp $BUILDDIR/libusb/1.0.22/lib/libusb-1.0.dylib contrib/build-osx
 
-info "Building libsecp256k1"
-brew install autoconf automake libtool
-git clone https://github.com/bitcoin-core/secp256k1 $BUILDDIR/secp256k1
-pushd $BUILDDIR/secp256k1
-git reset --hard $LIBSECP_VERSION
-git clean -f -x -q
-./autogen.sh
-./configure --enable-module-recovery --enable-experimental --enable-module-ecdh --disable-jni
-make
-popd
-cp $BUILDDIR/secp256k1/.libs/libsecp256k1.0.dylib contrib/build-osx
-
-
 info "Installing requirements..."
 python3 -m pip install -Ir ./contrib/deterministic-build/requirements.txt --user && \
 python3 -m pip install -Ir ./contrib/deterministic-build/requirements-binaries.txt --user || \
