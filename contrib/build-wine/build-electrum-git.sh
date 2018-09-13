@@ -2,6 +2,7 @@
 
 NAME_ROOT=electrum-atom
 PYTHON_VERSION=3.5.4
+REPO=https://github.com/bitcoin-atom/electrum-atom.git
 
 # These settings probably don't need any change
 export WINEPREFIX=/opt/wine64
@@ -19,6 +20,8 @@ set -e
 mkdir -p tmp
 cd tmp
 
+git clone $REPO $WINEPREFIX/drive_c/
+mv $WINEPREFIX/drive_c/electrum-atom $WINEPREFIX/drive_c/electrum_atom
 pushd $WINEPREFIX/drive_c/electrum_atom
 
 # Load electrum-icons and electrum-locale for this release
@@ -44,7 +47,7 @@ find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
 popd
 
 cp $WINEPREFIX/drive_c/electrum_atom/LICENCE .
-cp $WINEPREFIX/drive_c/electrum_atom/contrib/deterministic-build/electrum-icons/icons_rc.py $WINEPREFIX/drive_c/electrum_atom/electrum_atom/gui/qt/
+pyrcc5 $WINEPREFIX/drive_c/electrum_atom/icons.qrc -o $WINEPREFIX/drive_c/electrum_atom/electrum_atom/gui/qt/icons_rc.py
 
 # Install frozen dependencies
 $PYTHON -m pip install -r ../../deterministic-build/requirements.txt
